@@ -20,6 +20,8 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     public int xIndex { get; set; }
     public int yIndex { get; set; }
 
+    public bool isMatched = false;
+
     public Color[] colors;
 
     private void Start() {

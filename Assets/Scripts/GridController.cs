@@ -72,12 +72,70 @@ public class GridController : MonoBehaviour {
         cell.PositionCell();
         cell2.PositionCell();
 
-        // TODO: check for matches
+        // check for matches
+        if (CheckForMatches()) {
+            PopMatches();
 
-        // TODO: if no matches, unswap
+        } else {
+
+            // TODO: if no matches, unswap
+        }
 
     }
-   
+    private void PopMatches() {
+        for (int x = 0; x < cells.GetLength(0); x++) {
+            for (int y = 0; y < cells.GetLength(1); y++) {
+                
+                if (cells[x, y].isMatched)
+                    cells[x, y].gameObject.SetActive(false);
+
+            }
+        }
+    }
+
+    public bool CheckForMatches() {
+
+        bool foundMatches = false;
+
+        for(int x = 0; x < cells.GetLength(0); x++) {
+            for(int y = 0; y < cells.GetLength(1); y++) {
+
+                // check for matches up
+                if (CheckNeighborForMatch(cells[x, y], Direction.Up) >= 3) foundMatches = true;
+
+                // check for matches up/right
+                if (CheckNeighborForMatch(cells[x, y], Direction.RightUp) >= 3) foundMatches = true;
+
+                // check for matches down/right
+                if (CheckNeighborForMatch(cells[x, y], Direction.RightDown) >= 3) foundMatches = true;
+
+            }
+        }
+
+        return foundMatches;
+    }
+    private int CheckNeighborForMatch(GridCell cell, Direction dir, int length = 1) {
+        GridCell cell2 = FindNeighborCell(cell, dir);
+
+        if(cell2 != null && cell.cellType == cell2.cellType) {
+            // match!
+
+            int total = CheckNeighborForMatch(cell2, dir, length + 1);
+
+            if (total >= 3) {
+                cell.isMatched = true;
+                cell2.isMatched = true;
+            }
+
+            return total;
+
+        } else {
+            // no match!
+
+            return length;
+        }
+
+    }
 
     private GridCell FindNeighborCell(GridCell cell, Direction dir) {
 

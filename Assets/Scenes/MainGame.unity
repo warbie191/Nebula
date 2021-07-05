@@ -550,8 +550,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gridSpacing: 51
-  gridWidth: 4
-  gridHeight: 4
+  gridWidth: 8
+  gridHeight: 8
   cellPrefab: {fileID: 6708652302751398514, guid: afb5bb9015b88564fbede85298c5d359, type: 3}
 --- !u!1 &1399788756
 GameObject:
