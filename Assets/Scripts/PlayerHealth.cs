@@ -41,6 +41,11 @@ public class PlayerHealth : MonoBehaviour
         {
             RestoreHealth(Random.Range(5, 10));
         }
+
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            RestoreSheilds(Random.Range(5, 10));
+        }
     }
 
     public void UpdateHealthUI()
@@ -85,7 +90,15 @@ public class PlayerHealth : MonoBehaviour
             percentComplete = percentComplete * percentComplete; //for animation purpose makes transition smoother
             backShieldBar.fillAmount = Mathf.Lerp(fillB, hFraction, percentComplete);
         }
-
+        if (fillF < hFraction)
+        {
+            backShieldBar.color = Color.green;
+            backShieldBar.fillAmount = hFraction;
+            lerpTimer += Time.deltaTime;
+            float percentComplete = lerpTimer / chipSpeed;
+            percentComplete = percentComplete * percentComplete; //for animation purpose makes transition smoother
+            frontShieldBar.fillAmount = Mathf.Lerp(fillF, backShieldBar.fillAmount, percentComplete);
+        }
     }
 
     public void TakeDamage(float damage)
@@ -99,6 +112,13 @@ public class PlayerHealth : MonoBehaviour
         health -= damage;
         lerpTimer = 0f;
         }
+    }
+
+    public void RestoreSheilds(float healAmount)
+    {
+        shields += healAmount;
+        lerpTimer = 0f;
+
     }
 
     public void RestoreHealth(float healAmount)
