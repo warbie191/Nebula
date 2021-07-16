@@ -82,22 +82,56 @@ public class GridController : MonoBehaviour
         
 
         if(CheckForMatches()){
-            Popmatches();
+           Popmatches();
         }
         else{
 
+            //unswap but no chance to animate
+            cell2.xIndex = cell.xIndex;
+            cell2.yIndex = cell.yIndex;
+            cell.xIndex = tempX;
+            cell.yIndex = tempY;
+            cells[cell.xIndex, cell.yIndex] = cell;
+            cells[cell2.xIndex, cell2.yIndex] = cell2;
+
+            cell.PositionCell();
+            cell2.PositionCell();
+
+            
         }
         //TODO check for matches, unswap
     }
 
     private void Popmatches()
     {
-        for (int x = 0; x < cells.GetLength(0); x++)
+        for (int x = 0; x < cells.GetLength(0); x++) //one column at a time
         {
+            int amountMatchThisColumn = 0;
+
             for (int y = 0; y < cells.GetLength(1); y++)
             {
                 if (cells[x, y].isMatched)
-                    cells[x, y].gameObject.SetActive(false);
+                {
+                    amountMatchThisColumn ++;
+
+                    int newYIndex = cells.GetLength(1) - amountMatchThisColumn;
+                    cells[x, y].yIndex = newYIndex;
+                    cells[x, newYIndex] = cells[x, y]; //move cell
+                    cells[x, newYIndex].PositionCell();
+                    cells[x, newYIndex].Respawn();
+                }
+                else
+                {
+                    if(amountMatchThisColumn > 0) { 
+                    //move cell down
+                    int newYIndex = cells[x, y].yIndex - amountMatchThisColumn;
+
+                    cells[x, y].yIndex = newYIndex;
+                    cells[x, newYIndex] = cells[x, y]; //move cell
+                    cells[x, newYIndex].PositionCell();
+                    }
+                }
+
             }
         }
     }

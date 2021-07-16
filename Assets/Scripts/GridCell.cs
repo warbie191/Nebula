@@ -25,22 +25,42 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
     public Color[] colors;
 
+
+    /// <summary>
+    /// The pixel position that the cell wants to be at for animation
+    /// </summary>
+    private Vector2 targetPosition;
+
     private void Start(){
+        Respawn();
+    }
+
+    public void Respawn()
+    {
         cellType = Random.Range(0, colors.Length);
         Image img = GetComponent<Image>();
         if (img != null) {
             img.color = colors[cellType];
         }
+        isMatched = false;
+    }
+    public void Init(){
+        PositionCell();
     }
 
+    public void Update()
+    {
+        //animating the cell?
+        //(x,y) ->xIndex, yIndex
+        RectTransform rt = (RectTransform)transform;
+        Vector2 dis = targetPosition - rt.anchoredPosition;
+        rt.anchoredPosition += dis * .05f;//go 5% towards target
 
-    public void Init(){
-        Text txt = GetComponentInChildren<Text>();
-        if (txt != null)        {
-            txt.text = xIndex + ", " + yIndex;
+        if (isMatched)
+        {
+            rt.localScale += (Vector3.zero - rt.localScale) * .05f;
         }
     }
-
 
 
     public void OnPointerDown(PointerEventData eventData)
@@ -73,16 +93,24 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
 
 
-    public void PositionCell()
+    public void PositionCell(bool snapToTarget = false)
     {
+        Text txt = GetComponentInChildren<Text>();
+        if (txt != null) {
+            txt.text = xIndex + ", " + yIndex;
+        }
         Vector2 pos = new Vector2(xIndex, yIndex) * GridController.grid.gridSpacing;
         if(xIndex % 2 == 0)
         {
             pos.y += GridController.grid.gridSpacing / 2;
         }
-        RectTransform rt = (RectTransform)transform;
-        rt.anchoredPosition = pos;
+        if (snapToTarget)
+        {
+            RectTransform rt = (RectTransform)transform;
+            rt.anchoredPosition = pos;
 
+        }
+        targetPosition = pos;
     }
 
 }//End GridCell
