@@ -4,14 +4,49 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-
-
-
-
 public class GridController : MonoBehaviour
 {
 
     static public GridController grid; //singleton
+
+    /// <summary>
+    /// This class holds all of the classes that make up the GridController's finite state machine (FSM).
+    /// This class is static, which means we cannot instantiate it.
+    /// </summary>
+    public static class States {
+        /// <summary>
+        /// The base-clase for the states we'll use in GridController's state machine.
+        /// This class is abstract, which means we cannot instantiate it, but we CAN
+        /// instantiate sub-classes of this class.
+        /// </summary>
+        public abstract class State {
+            public bool acceptsInput { get; protected set; }
+            /// <summary>
+            /// We will call this every game-tick.
+            /// It is marked as virtual, which means sub-classes can override it.
+            /// </summary>
+            /// <returns>This function is meant to return the State that the state machine
+            /// should switch to next. A value of `null` means that the state machine should NOT switch.</returns>
+            public virtual State Update() {
+                return null;
+            }
+            /// <summary>
+            /// This will be called once when this state becomes the active state in the FSM.
+            /// </summary>
+            public virtual void OnStart() { }
+            /// <summary>
+            /// This will be called once when this state is no longer the active state in the FSM.
+            /// </summary>
+            public virtual void OnEnd() { }
+        }
+        /// <summary>
+        /// This is the Idle state. In this state, the board can receive input from the player.
+        /// </summary>
+        public class Idle : State {
+            public Idle() { acceptsInput = true; }
+        }
+    }
+
 
     public float gridSpacing = 51;
     public int gridWidth = 4;
@@ -19,17 +54,33 @@ public class GridController : MonoBehaviour
 
     public GridCell cellPrefab;
     GridCell[,] cells;
+
+    /// <summary>
+    /// This holds a reference to the current state of the GridController's FSM.
+    /// </summary>
+    States.State boardState;
+
     
     private void Start(){
         GridController.grid = this;
         BuildGrid(gridWidth, gridHeight);
     }
-
     
     private void Update(){
-        
-    }
+        if (boardState == null) boardState = new States.Idle(); // if the FSM has no state, set it to Idle
+        ChangeStates(boardState.Update());
 
+    }
+    public bool AcceptsInput() {
+        if (boardState == null) return false;
+        return boardState.acceptsInput;
+    }
+    private void ChangeStates(States.State newState) {
+        if (newState == null) return;
+        if(boardState != null) boardState.OnEnd();
+        boardState = newState;
+        boardState.OnStart();
+    }
 
     private void BuildGrid(int w, int h){
         cells = new GridCell[w, h];
@@ -52,10 +103,9 @@ public class GridController : MonoBehaviour
 
     }//BuildGrid
 
-
     public void TrySwap(GridCell cell, Direction dir)
     {
-        //print("swap" + dir);
+        if (!AcceptsInput()) return;
 
         GridCell cell2 = FindNeighborCell(cell, dir);
 
@@ -76,10 +126,8 @@ public class GridController : MonoBehaviour
 
         cell.PositionCell();
         cell2.PositionCell();
-
-       
-
         
+
 
         if(CheckForMatches()){
            Popmatches();
@@ -104,13 +152,13 @@ public class GridController : MonoBehaviour
 
     private void Popmatches()
     {
-        for (int x = 0; x < cells.GetLength(0); x++) //one column at a time
+        for (int x = 0; x < cells.GetLength(0); x++) // for each column ...
         {
-            int amountMatchThisColumn = 0;
+            int amountMatchThisColumn = 0; // track the number of matches
 
-            for (int y = 0; y < cells.GetLength(1); y++)
+            for (int y = 0; y < cells.GetLength(1); y++) // go up the column (from 0), one gem at a time
             {
-                if (cells[x, y].isMatched)
+                if (cells[x, y].isMatched) // cell is matched:
                 {
                     amountMatchThisColumn ++;
 
@@ -120,18 +168,17 @@ public class GridController : MonoBehaviour
                     cells[x, newYIndex].PositionCell();
                     cells[x, newYIndex].Respawn();
                 }
-                else
+                else // cell is NOT matched:
                 {
-                    if(amountMatchThisColumn > 0) { 
-                    //move cell down
-                    int newYIndex = cells[x, y].yIndex - amountMatchThisColumn;
+                    if(amountMatchThisColumn > 0) {  // if there are cells popped below this cell:
+                        //move cell down
+                        int newYIndex = cells[x, y].yIndex - amountMatchThisColumn;
 
-                    cells[x, y].yIndex = newYIndex;
-                    cells[x, newYIndex] = cells[x, y]; //move cell
-                    cells[x, newYIndex].PositionCell();
+                        cells[x, y].yIndex = newYIndex;
+                        cells[x, newYIndex] = cells[x, y]; //move cell
+                        cells[x, newYIndex].PositionCell();
                     }
                 }
-
             }
         }
     }
