@@ -18,12 +18,12 @@ public enum Direction
 public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler 
 {
     public int cellType{ get; private set;}
-    public int xIndex  { get; set;}
-    public int yIndex { get; set; }
 
     public bool isMatched = false;
 
     public Color[] colors;
+
+    private Vector2 velocity;
 
 
     /// <summary>
@@ -43,26 +43,30 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             img.color = colors[cellType];
         }
         isMatched = false;
+        RectTransform rt = (RectTransform)transform;
+        rt.localScale = Vector3.one;
     }
-    public void Init(){
-        PositionCell();
-    }
-
-    public void Update()
-    {
-        //animating the cell?
-        //(x,y) ->xIndex, yIndex
+    public void AnimSlideToTarget() {
         RectTransform rt = (RectTransform)transform;
         Vector2 dis = targetPosition - rt.anchoredPosition;
         rt.anchoredPosition += dis * .05f;//go 5% towards target
+    }
+    public void AnimFallToTarget() {
+        RectTransform rt = (RectTransform)transform;
+        //if (rt.anchoredPosition.y < targetPosition.y) return;
 
+        velocity -= new Vector2(0, 800) * Time.deltaTime;
+        Vector2 newPos = rt.anchoredPosition + velocity * Time.deltaTime;
+        if (newPos.y < targetPosition.y) newPos.y = targetPosition.y;
+        rt.anchoredPosition = newPos;
+    }
+    public void AnimChangeScale() {
         if (isMatched)
         {
+            RectTransform rt = (RectTransform)transform;
             rt.localScale += (Vector3.zero - rt.localScale) * .05f;
         }
     }
-
-
     public void OnPointerDown(PointerEventData eventData)
     {
        // print("My value is " + cellType);
@@ -91,26 +95,29 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     }//ends OnPointerUP()
 
 
-
-
-    public void PositionCell(bool snapToTarget = false)
+    public void PositionCell(GridPosition gridPos, bool snapToTarget = false)
     {
         Text txt = GetComponentInChildren<Text>();
-        if (txt != null) {
-            txt.text = xIndex + ", " + yIndex;
-        }
-        Vector2 pos = new Vector2(xIndex, yIndex) * GridController.grid.gridSpacing;
-        if(xIndex % 2 == 0)
-        {
-            pos.y += GridController.grid.gridSpacing / 2;
-        }
-        if (snapToTarget)
-        {
-            RectTransform rt = (RectTransform)transform;
-            rt.anchoredPosition = pos;
 
-        }
+        // set text:
+        if (txt != null)  txt.text = gridPos.x + ", " + gridPos.y;
+
+        // get a copy of the gridPos as a Vector2
+        Vector2 pos = gridPos.vec2;
+
+        // if we're in even column, slide add .5 to x
+        if (gridPos.x % 2 == 0) pos.y += 0.5f;
+
+        // scale by the current grid-spacing
+        pos *= GridController.grid.gridSpacing;
+
+        // set target (pixel) position
         targetPosition = pos;
+
+        // snap to target position
+        if (snapToTarget) (transform as RectTransform).anchoredPosition = targetPosition;
+
+        velocity = Vector2.zero;
     }
 
 }//End GridCell

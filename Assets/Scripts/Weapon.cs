@@ -20,7 +20,6 @@ public class Weapon : MonoBehaviour
     void shootBullets()
     {
         //Shoot 
-        GameObject nu = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
-        nu.transform.parent = transform;
+        GameObject nu = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation, transform);
     }
 }

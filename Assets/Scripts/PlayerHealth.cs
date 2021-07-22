@@ -77,7 +77,7 @@ public class PlayerHealth : MonoBehaviour
 
     public void UpdateSheildUI()
     {
-        Debug.Log("Shield power at: " + shields);
+        //Debug.Log("Shield power at: " + shields);
         float fillF = frontShieldBar.fillAmount;
         float fillB = backShieldBar.fillAmount;
         float hFraction = shields / maxShields;

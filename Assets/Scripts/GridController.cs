@@ -4,8 +4,29 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class GridController : MonoBehaviour
-{
+
+public struct GridPosition {
+    static public GridPosition Zero = new GridPosition(0);
+    public int x;
+    public int y;
+    public override string ToString() {
+        return $"({x}, {y})";
+    }
+    public Vector2 vec2 {
+        get {
+            return new Vector2(x, y);
+        }
+    }
+    public GridPosition(int xy) {
+        this.x = xy;
+        this.y = xy;
+    }
+    public GridPosition(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+public class GridController : MonoBehaviour {
 
     static public GridController grid; //singleton
 
@@ -20,6 +41,9 @@ public class GridController : MonoBehaviour
         /// instantiate sub-classes of this class.
         /// </summary>
         public abstract class State {
+            protected bool doneAnimating {  get { return animTimer > animTime; } }
+            protected float animTime = .25f;
+            private float animTimer = 0;
             public bool acceptsInput { get; protected set; }
             /// <summary>
             /// We will call this every game-tick.
@@ -28,6 +52,11 @@ public class GridController : MonoBehaviour
             /// <returns>This function is meant to return the State that the state machine
             /// should switch to next. A value of `null` means that the state machine should NOT switch.</returns>
             public virtual State Update() {
+                if (animTime > 0f) {
+                    animTimer += Time.deltaTime;
+
+                    if (animTimer >= animTime) return new Idle();
+                }
                 return null;
             }
             /// <summary>
@@ -43,10 +72,96 @@ public class GridController : MonoBehaviour
         /// This is the Idle state. In this state, the board can receive input from the player.
         /// </summary>
         public class Idle : State {
-            public Idle() { acceptsInput = true; }
+            bool hasChecked = false;
+            public Idle() {
+                animTime = 0f;
+                acceptsInput = true;
+            }
+            public override State Update() {
+                if (!hasChecked) {
+                    hasChecked = true;
+                }
+
+                return null;
+            }
+        }
+        public class Swapping : State {
+            protected bool checkForMatches = true;
+            public Swapping(bool checkForMatches = true) {
+                this.checkForMatches = checkForMatches;
+            }
+            public override State Update() {
+                for (int x = 0; x < grid.cells.GetLength(0); x++) // for each column ...
+                {
+                    for (int y = 0; y < grid.cells.GetLength(1); y++) // go up the column (from 0), one gem at a time
+                    {
+                        grid.cells[x, y].AnimSlideToTarget();
+                    }
+                }
+                base.Update();
+                if (doneAnimating) {
+                    if (checkForMatches) { // unswapping does NOT check for matches
+                        if (grid.CheckForMatches()) {
+                            return new Popping();
+                        } else {
+                            return new Unswapping();
+                        }
+                    }
+                    return new Idle();
+                }
+                return null;
+            }
+        }
+        public class Unswapping : Swapping {
+            public Unswapping() : base(false) {
+
+            }
+            public override void OnStart() {
+                grid.UndoSwap();
+            }
+        }
+        public class Popping : State {
+
+            public Popping() {
+                animTime = .5f;
+            }
+
+            public override State Update() {
+                // animate the cells to shrink:
+                for (int x = 0; x < grid.cells.GetLength(0); x++) // for each column ...
+                {
+                    for (int y = 0; y < grid.cells.GetLength(1); y++) // go up the column (from 0), one gem at a time
+                    {
+                        grid.cells[x, y].AnimChangeScale();
+                    }
+                }
+
+                base.Update();
+                if(doneAnimating) {
+                    grid.Popmatches();
+                    return new Falling();
+                }
+                return null;
+            }
+        }
+        public class Falling : State {
+            public Falling() {
+                animTime = 1.5f;
+            }
+            public override State Update() {
+                for (int x = 0; x < grid.cells.GetLength(0); x++) // for each column ...
+                {
+                    for (int y = 0; y < grid.cells.GetLength(1); y++) // go up the column (from 0), one gem at a time
+                    {
+                        grid.cells[x, y].AnimFallToTarget();
+                    }
+                }
+                return base.Update();
+            }
         }
     }
 
+    public Canvas parentUI;
 
     public float gridSpacing = 51;
     public int gridWidth = 4;
@@ -60,13 +175,16 @@ public class GridController : MonoBehaviour
     /// </summary>
     States.State boardState;
 
-    
-    private void Start(){
+    GridPosition lastSwapA;
+    GridPosition lastSwapB;
+
+
+    private void Start() {
         GridController.grid = this;
         BuildGrid(gridWidth, gridHeight);
     }
-    
-    private void Update(){
+
+    private void Update() {
         if (boardState == null) boardState = new States.Idle(); // if the FSM has no state, set it to Idle
         ChangeStates(boardState.Update());
 
@@ -77,25 +195,24 @@ public class GridController : MonoBehaviour
     }
     private void ChangeStates(States.State newState) {
         if (newState == null) return;
-        if(boardState != null) boardState.OnEnd();
+        if (boardState != null) boardState.OnEnd();
         boardState = newState;
         boardState.OnStart();
     }
 
-    private void BuildGrid(int w, int h){
+    private void BuildGrid(int w, int h) {
         cells = new GridCell[w, h];
-        for (int x = 0; x < w; x++){   
-            for (int y = 0; y < h; y++){
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
 
-                GridCell cell = Instantiate(cellPrefab, transform);
+                // spawn UI game object:
+                GridCell cell = Instantiate(cellPrefab, parentUI.transform);
 
-                cell.xIndex = x;
-                cell.yIndex = y;
-                cell.PositionCell();
-                cell.Init();
-
+                // store cell in grid:
                 cells[x, y] = cell;
-                //cell.cellType = Random.Range(0, 10);
+
+                // position it on the screen:
+                cell.PositionCell(new GridPosition(x, y), true);
 
 
             }//end y loop
@@ -103,112 +220,135 @@ public class GridController : MonoBehaviour
 
     }//BuildGrid
 
+    public GridPosition? LookupCellPosition(GridCell cell) {
+        if (cell == null) return null;
+        for (int x = 0; x < cells.GetLength(0); x++) {
+            for (int y = 0; y < cells.GetLength(1); y++) {
+
+                if (cell == cells[x, y]) return new GridPosition(x, y);
+
+            }//end y loop
+        }//end x loop
+        return null;
+    }
+
+
     public void TrySwap(GridCell cell, Direction dir)
     {
         if (!AcceptsInput()) return;
+        if (cell == null) return;
 
-        GridCell cell2 = FindNeighborCell(cell, dir);
+        GridPosition cell1Pos = (GridPosition)LookupCellPosition(cell);
+        GridPosition cell2Pos = FindNeighborCell(cell1Pos, dir);
+        GridCell cell2 = LookupCell(cell2Pos);
 
-        if (cell2 == null) return; //no neighbor in that direction do nothing
+        if (cell == null || cell2 == null) return;
 
+        // swap them:
+        cells[cell1Pos.x, cell1Pos.y] = cell2;
+        cells[cell2Pos.x, cell2Pos.y] = cell;
 
-        cells[cell.xIndex, cell.yIndex] = cell2;
-        cells[cell2.xIndex, cell2.yIndex] = cell;
+        // notify them:
+        cell.PositionCell(cell2Pos);
+        cell2.PositionCell(cell1Pos);
 
-        int tempX = cell.xIndex;
-        int tempY = cell.yIndex;
+        lastSwapA = cell1Pos;
+        lastSwapB = cell2Pos;
 
-        cell.xIndex = cell2.xIndex;
-        cell.yIndex = cell2.yIndex;
+        // change state to Swapping:
+        ChangeStates(new States.Swapping(true));
+    }
+    public void UndoSwap() {
 
-        cell2.xIndex = tempX;
-        cell2.yIndex = tempY;
+        GridCell cell = LookupCell(lastSwapA);
+        GridCell cell2 = LookupCell(lastSwapB);
 
-        cell.PositionCell();
-        cell2.PositionCell();
-        
+        // swap them:
+        cells[lastSwapA.x, lastSwapA.y] = cell2;
+        cells[lastSwapB.x, lastSwapB.y] = cell;
 
+        // notify them:
+        cell.PositionCell(lastSwapB);
+        cell2.PositionCell(lastSwapA);
 
-        if(CheckForMatches()){
-           Popmatches();
-        }
-        else{
+        //lastSwapA = lastSwapB;
+        //lastSwapB = cell2Pos;
 
-            //unswap but no chance to animate
-            cell2.xIndex = cell.xIndex;
-            cell2.yIndex = cell.yIndex;
-            cell.xIndex = tempX;
-            cell.yIndex = tempY;
-            cells[cell.xIndex, cell.yIndex] = cell;
-            cells[cell2.xIndex, cell2.yIndex] = cell2;
-
-            cell.PositionCell();
-            cell2.PositionCell();
-
-            
-        }
-        //TODO check for matches, unswap
+        // change state to Swapping:
+        ChangeStates(new States.Swapping(false));
     }
 
     private void Popmatches()
     {
+
+        GridCell[,] temp = new GridCell[cells.GetLength(0), cells.GetLength(1)];
+
         for (int x = 0; x < cells.GetLength(0); x++) // for each column ...
         {
+
             int amountMatchThisColumn = 0; // track the number of matches
 
             for (int y = 0; y < cells.GetLength(1); y++) // go up the column (from 0), one gem at a time
             {
-                if (cells[x, y].isMatched) // cell is matched:
+                GridCell cell = cells[x, y];
+                if (cell.isMatched) // cell is matched:
                 {
                     amountMatchThisColumn ++;
 
                     int newYIndex = cells.GetLength(1) - amountMatchThisColumn;
-                    cells[x, y].yIndex = newYIndex;
-                    cells[x, newYIndex] = cells[x, y]; //move cell
-                    cells[x, newYIndex].PositionCell();
-                    cells[x, newYIndex].Respawn();
+
+                    temp[x, newYIndex] = cell; //move cell
+
                 }
                 else // cell is NOT matched:
                 {
-                    if(amountMatchThisColumn > 0) {  // if there are cells popped below this cell:
-                        //move cell down
-                        int newYIndex = cells[x, y].yIndex - amountMatchThisColumn;
-
-                        cells[x, y].yIndex = newYIndex;
-                        cells[x, newYIndex] = cells[x, y]; //move cell
-                        cells[x, newYIndex].PositionCell();
-                    }
+                    int newYIndex = y - amountMatchThisColumn;
+                    temp[x, newYIndex] = cell; //move cell
+                    cell.PositionCell(new GridPosition(x, newYIndex));
+                }
+            }
+            int secondCount = 0;
+            for (int y = 0; y < temp.GetLength(1); y++) // go up the column (from 0), one gem at a time
+            {
+                GridCell cell = temp[x, y];
+                if (cell.isMatched) // cell is matched:
+                {
+                    secondCount++;
+                    cell.Respawn();
+                    cell.PositionCell(new GridPosition(x, cells.GetLength(1) + secondCount), true);
+                    cell.PositionCell(new GridPosition(x, y));
+                    
                 }
             }
         }
+
+        cells = temp;
+
     }
 
-    private GridCell FindNeighborCell(GridCell cell, Direction dir)
+    private GridPosition FindNeighborCell(GridPosition pos, Direction dir)
     {
-        if (cell == null) return null;
 
-        if (dir == Direction.Up) return GetCellAt(cell.xIndex, cell.yIndex + 1);
-        if (dir == Direction.Down) return GetCellAt(cell.xIndex, cell.yIndex - 1);
+        if (dir == Direction.Up) return new GridPosition(pos.x, pos.y + 1);
+        if (dir == Direction.Down) return new GridPosition(pos.x, pos.y - 1);
 
-        if (cell.xIndex % 2 == 0) // even column
+        if (pos.x % 2 == 0) // even column
         {
-           
-
-            if (dir == Direction.LeftUp) return GetCellAt(cell.xIndex - 1, cell.yIndex + 1);
-            if (dir == Direction.LeftDown) return GetCellAt(cell.xIndex - 1, cell.yIndex);
-            if (dir == Direction.RightUp) return GetCellAt(cell.xIndex + 1, cell.yIndex + 1);
-            if (dir == Direction.RightDown) return GetCellAt(cell.xIndex + 1, cell.yIndex);
-
+            if (dir == Direction.LeftUp) return new GridPosition(pos.x - 1, pos.y + 1);
+            if (dir == Direction.LeftDown) return new GridPosition(pos.x - 1, pos.y);
+            if (dir == Direction.RightUp) return new GridPosition(pos.x + 1, pos.y + 1);
+            if (dir == Direction.RightDown) return new GridPosition(pos.x + 1, pos.y);
         }
         else //odd column
         {
-            if (dir == Direction.LeftUp) return GetCellAt(cell.xIndex - 1, cell.yIndex);
-            if (dir == Direction.LeftDown) return GetCellAt(cell.xIndex - 1, cell.yIndex - 1);
-            if (dir == Direction.RightUp) return GetCellAt(cell.xIndex + 1, cell.yIndex);
-            if (dir == Direction.RightDown) return GetCellAt(cell.xIndex + 1, cell.yIndex - 1);
+            if (dir == Direction.LeftUp) return new GridPosition(pos.x - 1, pos.y);
+            if (dir == Direction.LeftDown) return new GridPosition(pos.x - 1, pos.y - 1);
+            if (dir == Direction.RightUp) return new GridPosition(pos.x + 1, pos.y);
+            if (dir == Direction.RightDown) return new GridPosition(pos.x + 1, pos.y - 1);
 
         }
-        return null;
+        print("uh oh...");
+        return pos; // this shouldn't happen
     }
 
     public GridCell GetCellAt(int x, int y){
@@ -216,7 +356,6 @@ public class GridController : MonoBehaviour
         if (y < 0) return null;
         if (x >= cells.GetLength(0)) return null;
         if (y >= cells.GetLength(1)) return null;
-
 
         return cells[x, y];
     }
@@ -229,40 +368,53 @@ public class GridController : MonoBehaviour
         {
             for(int y=0; y < cells.GetLength(1); y++)
             {
+                GridPosition pos = new GridPosition(x, y);
                 //check for matches up
-               if(CheckNeighborForMatch(cells[x, y], Direction.Up) >= 3) foundMatches = true;
+               if(CheckNeighborForMatch(pos, Direction.Up) >= 3) foundMatches = true;
                 //check for matches up and right
-               if (CheckNeighborForMatch(cells[x, y], Direction.RightUp) >= 3) foundMatches = true;
+               if (CheckNeighborForMatch(pos, Direction.RightUp) >= 3) foundMatches = true;
                 //check for matches down and right
-               if (CheckNeighborForMatch(cells[x, y], Direction.RightDown) >= 3) foundMatches = true;
+               if (CheckNeighborForMatch(pos, Direction.RightDown) >= 3) foundMatches = true;
 
             }
         }
         return foundMatches;
     }
   
-    private int CheckNeighborForMatch(GridCell cell, Direction dir, int lenght = 1)
+    private int CheckNeighborForMatch(GridPosition pos, Direction dir)
     {
-        GridCell cell2 = FindNeighborCell(cell, dir);
-        if (cell2 !=null && cell.cellType == cell2.cellType){
-            //match
-            int total = CheckNeighborForMatch(cell2, dir, lenght+1);
+        List<GridCell> cellsInMatch = new List<GridCell>();
+        GridCell cell = LookupCell(pos);
+        cellsInMatch.Add(cell);
+
+        int lengthOfMatch = 1;
+        while(cell != null && lengthOfMatch < 12) {
+
+            GridPosition cell2Pos = FindNeighborCell(pos, dir);
+            GridCell cell2 = LookupCell(cell2Pos);
+            if(cell2 == null) break;
+            if(cell2.cellType != cell.cellType) break;
             
-            if (total >= 3)
-            {
-                cell.isMatched = true;
-                cell2.isMatched = true;
-            }
-
-            return total;
+            cellsInMatch.Add(cell2);
+            lengthOfMatch++;
+            cell = cell2;
+            pos = cell2Pos;
         }
-        else {
-            //no match
-            return lenght;
+        if (lengthOfMatch >= 3)
+        {
+            foreach (GridCell c in cellsInMatch) c.isMatched = true;
         }
-
+        //print(pos + " (type " + cell.cellType + ") dir: " + dir + " results: " + lengthOfMatch);
+        return lengthOfMatch;
     }
 
+    private GridCell LookupCell(GridPosition pos) {
 
+        if (pos.x < 0) return null;
+        if (pos.y < 0) return null;
+        if (pos.x >= cells.GetLength(0)) return null;
+        if (pos.y >= cells.GetLength(1)) return null;
 
+        return cells[pos.x, pos.y];
+    }
 }//end
