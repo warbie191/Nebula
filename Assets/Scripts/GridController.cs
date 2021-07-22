@@ -123,7 +123,7 @@ public class GridController : MonoBehaviour {
         public class Popping : State {
 
             public Popping() {
-                animTime = .5f;
+                animTime = .25f;
             }
 
             public override State Update() {
@@ -145,18 +145,28 @@ public class GridController : MonoBehaviour {
             }
         }
         public class Falling : State {
+
             public Falling() {
                 animTime = 1.5f;
             }
             public override State Update() {
+
+                
+                bool isDone = true;
                 for (int x = 0; x < grid.cells.GetLength(0); x++) // for each column ...
                 {
                     for (int y = 0; y < grid.cells.GetLength(1); y++) // go up the column (from 0), one gem at a time
                     {
-                        grid.cells[x, y].AnimFallToTarget();
+                        if (!grid.cells[x, y].AnimFallToTarget()) isDone = false;
                     }
                 }
-                return base.Update();
+                if (isDone) {
+                    if (grid.CheckForMatches()) {
+                        return new Popping();
+                    }
+                    return new Idle();
+                }
+                return null;
             }
         }
     }

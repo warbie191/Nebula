@@ -23,13 +23,12 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
     public Color[] colors;
 
-    private Vector2 velocity;
-
 
     /// <summary>
     /// The pixel position that the cell wants to be at for animation
     /// </summary>
     private Vector2 targetPosition;
+    private Vector2 velocity;
 
     private void Start(){
         Respawn();
@@ -45,20 +44,22 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         isMatched = false;
         RectTransform rt = (RectTransform)transform;
         rt.localScale = Vector3.one;
+        velocity = Vector2.zero;
     }
     public void AnimSlideToTarget() {
         RectTransform rt = (RectTransform)transform;
         Vector2 dis = targetPosition - rt.anchoredPosition;
         rt.anchoredPosition += dis * .05f;//go 5% towards target
     }
-    public void AnimFallToTarget() {
+    public bool AnimFallToTarget() {
         RectTransform rt = (RectTransform)transform;
-        //if (rt.anchoredPosition.y < targetPosition.y) return;
+        if (rt.anchoredPosition.y <= targetPosition.y) return true;
 
         velocity -= new Vector2(0, 800) * Time.deltaTime;
         Vector2 newPos = rt.anchoredPosition + velocity * Time.deltaTime;
         if (newPos.y < targetPosition.y) newPos.y = targetPosition.y;
         rt.anchoredPosition = newPos;
+        return false;
     }
     public void AnimChangeScale() {
         if (isMatched)
@@ -116,7 +117,7 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
         // snap to target position
         if (snapToTarget) (transform as RectTransform).anchoredPosition = targetPosition;
-
+        
         velocity = Vector2.zero;
     }
 
