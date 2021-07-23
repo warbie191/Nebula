@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-
+using UnityEngine.UI;
 
 public struct GridPosition {
     static public GridPosition Zero = new GridPosition(0);
@@ -67,6 +67,9 @@ public class GridController : MonoBehaviour {
             /// This will be called once when this state is no longer the active state in the FSM.
             /// </summary>
             public virtual void OnEnd() { }
+            public override string ToString() {
+                return this.GetType().Name;
+            }
         }
         /// <summary>
         /// This is the Idle state. In this state, the board can receive input from the player.
@@ -171,13 +174,21 @@ public class GridController : MonoBehaviour {
         }
     }
 
+    [Header("Refs to GameObjects")]
+    [Tooltip("The canvas that will contain the GridCells")]
     public Canvas parentUI;
+    [Tooltip("The text that will display the GridController's current state")]
+    public Text textUI;
 
+    [Header("Refs to Prefabs")]
+    public GridCell cellPrefab;
+
+    [Header("Grid Settings")]
     public float gridSpacing = 51;
     public int gridWidth = 4;
     public int gridHeight = 4;
 
-    public GridCell cellPrefab;
+    #region Internal (private) State
     GridCell[,] cells;
 
     /// <summary>
@@ -187,7 +198,7 @@ public class GridController : MonoBehaviour {
 
     GridPosition lastSwapA;
     GridPosition lastSwapB;
-
+    #endregion
 
     private void Start() {
         GridController.grid = this;
@@ -197,7 +208,7 @@ public class GridController : MonoBehaviour {
     private void Update() {
         if (boardState == null) boardState = new States.Idle(); // if the FSM has no state, set it to Idle
         ChangeStates(boardState.Update());
-
+        textUI.text = boardState.ToString();
     }
     public bool AcceptsInput() {
         if (boardState == null) return false;
