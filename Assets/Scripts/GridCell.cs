@@ -110,7 +110,7 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         if (gridPos.x % 2 == 0) pos.y += 0.5f;
 
         // scale by the current grid-spacing
-        pos *= GridController.grid.gridSpacing;
+        pos *= GridController.grid.gridSpace;
 
         // set target (pixel) position
         targetPosition = pos;

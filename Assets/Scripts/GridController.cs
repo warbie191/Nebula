@@ -30,6 +30,7 @@ public class GridController : MonoBehaviour {
 
     static public GridController grid; //singleton
 
+    #region FSM Classes
     /// <summary>
     /// This class holds all of the classes that make up the GridController's finite state machine (FSM).
     /// This class is static, which means we cannot instantiate it.
@@ -173,7 +174,8 @@ public class GridController : MonoBehaviour {
             }
         }
     }
-
+    #endregion
+    #region Inspector Properties
     [Header("Refs to GameObjects")]
     [Tooltip("The canvas that will contain the GridCells")]
     public Canvas parentUI;
@@ -187,10 +189,10 @@ public class GridController : MonoBehaviour {
     public float gridSpacing = 51;
     public int gridWidth = 4;
     public int gridHeight = 4;
-
-    #region Internal (private) State
+    #endregion
+    #region Internal State
+    public Vector2 gridSpace { get; private set; }
     GridCell[,] cells;
-
     /// <summary>
     /// This holds a reference to the current state of the GridController's FSM.
     /// </summary>
@@ -201,6 +203,9 @@ public class GridController : MonoBehaviour {
     #endregion
 
     private void Start() {
+        
+        gridSpace = new Vector2(gridSpacing * Mathf.Sqrt(3) / 2.0f, gridSpacing);
+
         GridController.grid = this;
         BuildGrid(gridWidth, gridHeight);
     }

@@ -146,7 +146,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -170,7 +170,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isMatched: 0
   colors:
-  - {r: 0.07438148, g: 0.9528302, b: 0, a: 1}
+  - {r: 0.032213923, g: 0.412, b: 0, a: 1}
   - {r: 0.012519836, g: 0, b: 1, a: 1}
   - {r: 1, g: 0, b: 0, a: 1}
   - {r: 0.6037736, g: 0.019366283, b: 0.50856304, a: 1}
