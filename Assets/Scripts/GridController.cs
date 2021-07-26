@@ -309,6 +309,8 @@ public class GridController : MonoBehaviour {
 
         GridCell[,] temp = new GridCell[cells.GetLength(0), cells.GetLength(1)];
 
+        Dictionary<ModuleType, int> matchesByType = new Dictionary<ModuleType, int>();
+
         for (int x = 0; x < cells.GetLength(0); x++) // for each column ...
         {
 
@@ -333,12 +335,21 @@ public class GridController : MonoBehaviour {
                     cell.PositionCell(new GridPosition(x, newYIndex));
                 }
             }
+            
             int secondCount = 0;
+
             for (int y = 0; y < temp.GetLength(1); y++) // go up the column (from 0), one gem at a time
             {
                 GridCell cell = temp[x, y];
                 if (cell.isMatched) // cell is matched:
                 {
+                    // record match in dictionary:
+                    if (matchesByType.ContainsKey(cell.cellType)) {
+                        matchesByType[cell.cellType]++;
+                    } else {
+                        matchesByType[cell.cellType] = 1;
+                    }
+
                     secondCount++;
                     cell.Respawn();
                     cell.PositionCell(new GridPosition(x, cells.GetLength(1) + secondCount), true);
@@ -349,6 +360,14 @@ public class GridController : MonoBehaviour {
         }
 
         cells = temp;
+
+        // if a ShipController exists,
+        // tell it which GridCells were matches:
+        if (ShipController.main != null) {
+            foreach (KeyValuePair<ModuleType, int> matchType in matchesByType) {
+                ShipController.main.GemsMatched(matchType.Key, matchType.Value);
+            }
+        }
 
     }
 

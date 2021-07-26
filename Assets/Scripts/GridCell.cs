@@ -5,7 +5,6 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 
-
 public enum Direction
 {
     RightDown,
@@ -17,7 +16,7 @@ public enum Direction
 }
 public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler 
 {
-    public int cellType{ get; private set;}
+    public ModuleType cellType { get; private set;}
 
     public bool isMatched = false;
 
@@ -34,12 +33,16 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         Respawn();
     }
 
-    public void Respawn()
-    {
-        cellType = Random.Range(0, colors.Length);
+    public void Respawn() {
+
+        cellType = (ModuleType)Random.Range(0, System.Enum.GetNames(typeof(ModuleType)).Length);
+
         Image img = GetComponent<Image>();
         if (img != null) {
-            img.color = colors[cellType];
+            int n = (int)cellType;
+            if (n < 0) n = 0;
+            if (n >= colors.Length) n = colors.Length - 1;
+            img.color = colors[n];
         }
         isMatched = false;
         RectTransform rt = (RectTransform)transform;

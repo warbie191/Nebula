@@ -1006,6 +1006,7 @@ GameObject:
   - component: {fileID: 994854203}
   - component: {fileID: 994854202}
   - component: {fileID: 994854204}
+  - component: {fileID: 994854205}
   m_Layer: 5
   m_Name: Ship
   m_TagString: Untagged
@@ -1085,6 +1086,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   firePoint: {fileID: 1232280798}
   bulletPrefab: {fileID: 2477203333343602401, guid: b661b9606805bb548bf9cfb0e21d9c7b, type: 3}
+--- !u!114 &994854205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 994854200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d689cf8fd49c0c94b8681d801d650859, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  installedModules: []
 --- !u!1 &1114633325
 GameObject:
   m_ObjectHideFlags: 0
@@ -1574,7 +1588,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 52.938538, y: 149.16031}
-  m_SizeDelta: {x: 964.0615, y: 461.6653}
+  m_SizeDelta: {x: 595.7463, y: 338.3924}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &1787896190
 MonoBehaviour:
