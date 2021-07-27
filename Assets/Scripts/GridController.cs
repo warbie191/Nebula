@@ -270,6 +270,8 @@ public class GridController : MonoBehaviour {
 
         if (cell == null || cell2 == null) return;
 
+        if (cell.cellType == CellType.None || cell2.cellType == CellType.None) return;
+
         // swap them:
         cells[cell1Pos.x, cell1Pos.y] = cell2;
         cells[cell2Pos.x, cell2Pos.y] = cell;
@@ -309,64 +311,69 @@ public class GridController : MonoBehaviour {
 
         GridCell[,] temp = new GridCell[cells.GetLength(0), cells.GetLength(1)];
 
-        Dictionary<ModuleType, int> matchesByType = new Dictionary<ModuleType, int>();
+        Dictionary<CellType, int> matchesByType = new Dictionary<CellType, int>();
 
         for (int x = 0; x < cells.GetLength(0); x++) // for each column ...
         {
 
             int amountMatchThisColumn = 0; // track the number of matches
-
+            List<GridCell> cellsPopped = new List<GridCell>();
+            List<GridCell> cellsUnpopped = new List<GridCell>();
+    
             for (int y = 0; y < cells.GetLength(1); y++) // go up the column (from 0), one gem at a time
             {
                 GridCell cell = cells[x, y];
-                if (cell.isMatched) // cell is matched:
-                {
+                if (cell.cellType == CellType.None) continue;
+                if (cell.isMatched) {
                     amountMatchThisColumn ++;
-
-                    int newYIndex = cells.GetLength(1) - amountMatchThisColumn;
-
-                    temp[x, newYIndex] = cell; //move cell
-
-                }
-                else // cell is NOT matched:
-                {
-                    int newYIndex = y - amountMatchThisColumn;
-                    temp[x, newYIndex] = cell; //move cell
-                    cell.PositionCell(new GridPosition(x, newYIndex));
-                }
-            }
-            
-            int secondCount = 0;
-
-            for (int y = 0; y < temp.GetLength(1); y++) // go up the column (from 0), one gem at a time
-            {
-                GridCell cell = temp[x, y];
-                if (cell.isMatched) // cell is matched:
-                {
+                    cellsPopped.Add(cell);
                     // record match in dictionary:
                     if (matchesByType.ContainsKey(cell.cellType)) {
                         matchesByType[cell.cellType]++;
                     } else {
                         matchesByType[cell.cellType] = 1;
                     }
+                } else {
+                    cellsUnpopped.Add(cell);
+                }
+            }
+            
+            int secondCount = 0;
+            
+
+            for (int y = 0; y < temp.GetLength(1); y++) // go up the column (from 0), one gem at a time
+            {
+                GridCell cell = null;
+
+                if(cells[x,y].cellType == CellType.None) {
+                    cell = cells[x, y];
+                }
+                else if (cellsUnpopped.Count > 0) {
+                    cell = cellsUnpopped[0];
+                    cellsUnpopped.RemoveAt(0);
+                }
+                else {
+                    cell = cellsPopped[0];
+                    cellsPopped.RemoveAt(0);
+                }
+                if (cell.isMatched) // cell is matched:
+                {
 
                     secondCount++;
                     cell.Respawn();
                     cell.PositionCell(new GridPosition(x, cells.GetLength(1) + secondCount), true);
                     cell.PositionCell(new GridPosition(x, y));
-                    
+                } else {
+                    cell.PositionCell(new GridPosition(x, y));
                 }
+                temp[x, y] = cell;
             }
         }
 
         cells = temp;
 
-        // if a ShipController exists,
-        // tell it which GridCells were matches:
-        if (ShipController.main != null) {
-            foreach (KeyValuePair<ModuleType, int> matchType in matchesByType) {
-                ShipController.main.GemsMatched(matchType.Key, matchType.Value);
-            }
+        foreach (KeyValuePair<CellType, int> matchType in matchesByType) {
+            ShipController.GemsMatched(matchType.Key, matchType.Value);
         }
 
     }
@@ -428,8 +435,10 @@ public class GridController : MonoBehaviour {
   
     private int CheckNeighborForMatch(GridPosition pos, Direction dir)
     {
-        List<GridCell> cellsInMatch = new List<GridCell>();
         GridCell cell = LookupCell(pos);
+        if (cell.cellType == CellType.None) return 0;
+
+        List<GridCell> cellsInMatch = new List<GridCell>();
         cellsInMatch.Add(cell);
 
         int lengthOfMatch = 1;

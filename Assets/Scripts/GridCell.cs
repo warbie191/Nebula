@@ -16,7 +16,7 @@ public enum Direction
 }
 public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler 
 {
-    public ModuleType cellType { get; private set;}
+    public CellType cellType { get; private set;}
 
     public bool isMatched = false;
 
@@ -35,7 +35,7 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
     public void Respawn() {
 
-        cellType = (ModuleType)Random.Range(0, System.Enum.GetNames(typeof(ModuleType)).Length);
+        cellType = (CellType)Random.Range(0, System.Enum.GetNames(typeof(CellType)).Length);
 
         Image img = GetComponent<Image>();
         if (img != null) {
