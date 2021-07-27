@@ -436,7 +436,10 @@ public class GridController : MonoBehaviour {
     private int CheckNeighborForMatch(GridPosition pos, Direction dir)
     {
         GridCell cell = LookupCell(pos);
-        if (cell.cellType == CellType.None) return 0;
+        CellType matchType = cell.cellType;
+        
+        if (matchType == CellType.None) return 0;
+
 
         List<GridCell> cellsInMatch = new List<GridCell>();
         cellsInMatch.Add(cell);
@@ -446,8 +449,17 @@ public class GridController : MonoBehaviour {
 
             GridPosition cell2Pos = FindNeighborCell(pos, dir);
             GridCell cell2 = LookupCell(cell2Pos);
-            if(cell2 == null) break;
-            if(cell2.cellType != cell.cellType) break;
+            
+            if (cell2 == null) break;
+            if (cell2.cellType == CellType.None) break;
+
+            if (matchType == CellType.Wild) {
+                matchType = cell2.cellType;
+            }
+            else if(cell2.cellType == CellType.Wild) {
+
+            }
+            else if(cell2.cellType != cell.cellType) break;
             
             cellsInMatch.Add(cell2);
             lengthOfMatch++;
