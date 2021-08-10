@@ -12,9 +12,10 @@ public enum CellType {
     EngineDrive
 }
 
-public class _ShipModule : MonoBehaviour {
+public abstract class _ShipModule : MonoBehaviour {
 
     public CellType poweredBy;
+    public bool autoActivate = true;
 
     private void Start() {
         ShipController.InstallModule(this);
@@ -22,7 +23,6 @@ public class _ShipModule : MonoBehaviour {
     private void OnDestroy() {
         ShipController.UnInstallModule(this);
     }
-    public virtual void OnMatchCell(int amount) {
-
-    }
+    public abstract void ModuleCellsMatched(int amount);
+    public abstract void ModuleActivated();
 }

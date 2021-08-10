@@ -208,13 +208,20 @@ public class GridController : MonoBehaviour {
 
     private void Start() {
         
-        gridSpace = new Vector2(gridSpacing * Mathf.Sqrt(3) / 2.0f, gridSpacing);
-
         GridController.grid = this;
         BuildGrid(gridWidth, gridHeight);
         ClipCorners();
     }
+    private void RecalcSpacing() {
 
+        //gridSpacing = (transform as RectTransform).rect.width / (cells.GetLength(0) - 1);
+        gridSpace = new Vector2(
+            1.0f / (cells.GetLength(0) - 1),
+            1.0f / (cells.GetLength(1) - .5f)
+        );
+
+        //gridSpace = new Vector2(gridSpacing * Mathf.Sqrt(3) / 2.0f, gridSpacing);
+    }
     private void Update() {
         if (boardState == null) boardState = new States.Idle(); // if the FSM has no state, set it to Idle
         ChangeStates(boardState.Update());
@@ -231,13 +238,34 @@ public class GridController : MonoBehaviour {
         boardState.OnStart();
     }
 
+    [ContextMenu("Rebuild Grid")]
+    private void RebuildGrid() {
+        if(Application.isPlaying) BuildGrid(gridWidth, gridHeight);
+        
+    }
+
     /// <summary>
     /// This function builds a board of random CellTypes
     /// </summary>
     /// <param name="w"></param>
     /// <param name="h"></param>
     private void BuildGrid(int w, int h) {
+
+
+        // destroy existing GridCell objects:
+        if(cells != null) {
+            for (int x = 0; x < cells.GetLength(0); x++) {
+                for (int y = 0; y < cells.GetLength(1); y++) {
+                    if (cells[x, y]) {
+                        Destroy(cells[x, y].gameObject);
+                    }
+                }//end y loop
+            }//end x loop
+        }
+
         cells = new GridCell[w, h];
+        RecalcSpacing();
+
         for (int x = 0; x < w; x++) {
             for (int y = 0; y < h; y++) {
 
@@ -265,7 +293,9 @@ public class GridController : MonoBehaviour {
     private void BuildGrid(int[,] layout) {
         int w = layout.GetLength(0);
         int h = layout.GetLength(1);
+        
         cells = new GridCell[w, h];
+        RecalcSpacing();
 
         for (int x = 0; x < w; x++) {
             for (int y = 0; y < h; y++) {
@@ -534,7 +564,7 @@ public class GridController : MonoBehaviour {
             else if(cell2.cellType == CellType.Wild) {
 
             }
-            else if(cell2.cellType != cell.cellType) break;
+            else if(cell2.cellType !=  matchType) break;
             
             cellsInMatch.Add(cell2);
             lengthOfMatch++;

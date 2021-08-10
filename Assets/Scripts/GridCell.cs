@@ -51,17 +51,17 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     }
     public void AnimSlideToTarget() {
         RectTransform rt = (RectTransform)transform;
-        Vector2 dis = targetPosition - rt.anchoredPosition;
-        rt.anchoredPosition += dis * .05f;//go 5% towards target
+        Vector2 dis = targetPosition - rt.anchorMin;
+        rt.anchorMax = rt.anchorMin = rt.anchorMin + dis * .05f;
     }
     public bool AnimFallToTarget() {
         RectTransform rt = (RectTransform)transform;
-        if (rt.anchoredPosition.y <= targetPosition.y) return true;
+        if (rt.anchorMin.y <= targetPosition.y) return true;
 
-        velocity -= new Vector2(0, 800) * Time.deltaTime;
-        Vector2 newPos = rt.anchoredPosition + velocity * Time.deltaTime;
+        velocity -= new Vector2(0, 10f) * Time.deltaTime;
+        Vector2 newPos = rt.anchorMin + velocity * Time.deltaTime;
         if (newPos.y < targetPosition.y) newPos.y = targetPosition.y;
-        rt.anchoredPosition = newPos;
+        rt.anchorMax = rt.anchorMin = newPos;
         return false;
     }
     public void AnimChangeScale() {
@@ -124,6 +124,9 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         // get a copy of the gridPos as a Vector2
         Vector2 pos = gridPos.vec2;
 
+        //pos.x += .5f;
+        //pos.y += .5f;
+
         // if we're in even column, slide add .5 to x
         if (gridPos.x % 2 == 0) pos.y += 0.5f;
 
@@ -134,7 +137,11 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         targetPosition = pos;
 
         // snap to target position
-        if (snapToTarget) (transform as RectTransform).anchoredPosition = targetPosition;
+        //if (snapToTarget) (transform as RectTransform).anchoredPosition = targetPosition;
+        if (snapToTarget) {
+            (transform as RectTransform).anchorMin = targetPosition;
+            (transform as RectTransform).anchorMax = targetPosition;
+        }
         
         velocity = Vector2.zero;
     }
