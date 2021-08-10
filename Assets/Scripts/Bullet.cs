@@ -22,7 +22,7 @@ public class Bullet : MonoBehaviour
         {
             asteroid.TakeDamage(damage);
         }
-        Debug.Log(hitinfo.name);
+        //Debug.Log(hitinfo.name);
         Destroy(gameObject);
     }
 

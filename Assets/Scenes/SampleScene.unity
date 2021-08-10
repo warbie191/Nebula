@@ -309,9 +309,10 @@ MonoBehaviour:
   parentUI: {fileID: 1787896192}
   textUI: {fileID: 1604489417}
   cellPrefab: {fileID: 5212357044616131074, guid: 6050a8cff581950428b957fb6524f453, type: 3}
-  gridSpacing: 51
-  gridWidth: 12
+  gridSpacing: 90
+  gridWidth: 9
   gridHeight: 8
+  isEditMode: 0
 --- !u!222 &326110748
 CanvasRenderer:
   m_ObjectHideFlags: 0

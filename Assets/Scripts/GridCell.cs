@@ -29,14 +29,7 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     private Vector2 targetPosition;
     private Vector2 velocity;
 
-    private void Start(){
-        Respawn();
-    }
-
-    public void Respawn() {
-
-        cellType = (CellType)Random.Range(0, System.Enum.GetNames(typeof(CellType)).Length);
-
+    private void UpdateSprite() {
         Image img = GetComponent<Image>();
         if (img != null) {
             int n = (int)cellType;
@@ -44,10 +37,17 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             if (n >= colors.Length) n = colors.Length - 1;
             img.color = colors[n];
         }
+    }
+    public void Spawn(CellType cellType) {
         isMatched = false;
         RectTransform rt = (RectTransform)transform;
         rt.localScale = Vector3.one;
         velocity = Vector2.zero;
+        SetCellType(cellType);
+    }
+
+    public void SpawnRandom() {
+        Spawn(RandCellType());
     }
     public void AnimSlideToTarget() {
         RectTransform rt = (RectTransform)transform;
@@ -71,15 +71,30 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             rt.localScale += (Vector3.zero - rt.localScale) * .05f;
         }
     }
+    public static CellType RandCellType() {
+        return (CellType)Random.Range(1, System.Enum.GetNames(typeof(CellType)).Length);
+    }
+    public void SetCellType(CellType cellType) {
+        this.cellType = cellType;
+        UpdateSprite();
+    }
     public void OnPointerDown(PointerEventData eventData)
     {
-       // print("My value is " + cellType);
-        
+       if(GridController.grid.isEditMode) {
+
+            if(cellType == CellType.None) {
+                SetCellType(RandCellType());
+            } else {
+                SetCellType(CellType.None);
+            }
+        }
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        //print("wootwoot");
+
+        if (GridController.grid.isEditMode) return;
+
         Vector2 cellPos = new Vector2(transform.position.x, transform.position.y);
         Vector2 vectorToMouse = eventData.position - cellPos;
 

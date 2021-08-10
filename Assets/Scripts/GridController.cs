@@ -189,6 +189,10 @@ public class GridController : MonoBehaviour {
     public float gridSpacing = 51;
     public int gridWidth = 4;
     public int gridHeight = 4;
+
+    [Header("Level Editing")]
+    public bool isEditMode = false;
+
     #endregion
     #region Internal State
     public Vector2 gridSpace { get; private set; }
@@ -208,6 +212,7 @@ public class GridController : MonoBehaviour {
 
         GridController.grid = this;
         BuildGrid(gridWidth, gridHeight);
+        ClipCorners();
     }
 
     private void Update() {
@@ -226,6 +231,11 @@ public class GridController : MonoBehaviour {
         boardState.OnStart();
     }
 
+    /// <summary>
+    /// This function builds a board of random CellTypes
+    /// </summary>
+    /// <param name="w"></param>
+    /// <param name="h"></param>
     private void BuildGrid(int w, int h) {
         cells = new GridCell[w, h];
         for (int x = 0; x < w; x++) {
@@ -233,6 +243,8 @@ public class GridController : MonoBehaviour {
 
                 // spawn UI game object:
                 GridCell cell = Instantiate(cellPrefab, parentUI.transform);
+
+                cell.SpawnRandom();
 
                 // store cell in grid:
                 cells[x, y] = cell;
@@ -245,6 +257,70 @@ public class GridController : MonoBehaviour {
         }//end x loop
 
     }//BuildGrid
+
+    /// <summary>
+    /// Builds a grid out of integer data (something like this will be handy for loading level layouts)
+    /// </summary>
+    /// <param name="layout"></param>
+    private void BuildGrid(int[,] layout) {
+        int w = layout.GetLength(0);
+        int h = layout.GetLength(1);
+        cells = new GridCell[w, h];
+
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
+
+                // spawn UI game object:
+                GridCell cell = Instantiate(cellPrefab, parentUI.transform);
+
+                cell.Spawn((CellType)layout[x,y]);
+
+                // store cell in grid:
+                cells[x, y] = cell;
+
+                // position it on the screen:
+                cell.PositionCell(new GridPosition(x, y), true);
+
+            }//end y loop
+        }//end x loop
+
+    }//BuildGrid
+
+    /// <summary>
+    /// This function cuts the board into a hexagon shape by setting
+    /// the corner cells to CellType.NONE
+    /// </summary>
+    private void ClipCorners() {
+
+        int w = cells.GetLength(0);
+        int h = cells.GetLength(1);
+        
+        int skippedCellsInMiddle = h - (w / 2);
+        int emptyCellsOnBottom = w / 4; // weird but it works
+
+        for (int x = 0; x < w; x++) {
+
+            int amt = 0;
+
+            for (int y = 0; y < h; y++) {
+
+                if(y < emptyCellsOnBottom) cells[x, y].SetCellType(CellType.None);
+                else if(amt < skippedCellsInMiddle) {
+                    amt++;
+                } else {
+                    cells[x, y].SetCellType(CellType.None);
+                }
+            }
+
+            if (x < w / 2) {
+                if(x % 2 == 1) emptyCellsOnBottom--;
+                skippedCellsInMiddle++;
+            } else {
+                if(x % 2 == 0) emptyCellsOnBottom++;
+                skippedCellsInMiddle--;
+            }
+        }
+    }
 
     public GridPosition? LookupCellPosition(GridCell cell) {
         if (cell == null) return null;
@@ -360,7 +436,7 @@ public class GridController : MonoBehaviour {
                 {
 
                     secondCount++;
-                    cell.Respawn();
+                    cell.SpawnRandom();
                     cell.PositionCell(new GridPosition(x, cells.GetLength(1) + secondCount), true);
                     cell.PositionCell(new GridPosition(x, y));
                 } else {
@@ -411,7 +487,6 @@ public class GridController : MonoBehaviour {
 
         return cells[x, y];
     }
-
 
     public bool CheckForMatches()
     {
