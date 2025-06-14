@@ -21,8 +21,7 @@ public class ShipController {
     public static void UnInstallModule(_ShipModule module) {
         installedModules.Remove(module);
     }
-
-    public static void GemsMatched(CellType moduleType, int amount) {
+    public static void OnGemsMatched(CellType moduleType, int amount) {
         
         //Debug.Log(amount + " of " + moduleType + " matched");
         

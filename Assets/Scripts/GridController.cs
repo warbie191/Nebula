@@ -207,7 +207,6 @@ public class GridController : MonoBehaviour {
     #endregion
 
     private void Start() {
-        
         GridController.grid = this;
         BuildGrid(gridWidth, gridHeight);
         ClipCorners();
@@ -216,8 +215,8 @@ public class GridController : MonoBehaviour {
 
         //gridSpacing = (transform as RectTransform).rect.width / (cells.GetLength(0) - 1);
         gridSpace = new Vector2(
-            1.0f / (cells.GetLength(0) - 1),
-            1.0f / (cells.GetLength(1) - .5f)
+            1.0f / (cells.GetLength(0) - 1.0f),
+            1.0f / (cells.GetLength(1) - 0.5f)
         );
 
         //gridSpace = new Vector2(gridSpacing * Mathf.Sqrt(3) / 2.0f, gridSpacing);
@@ -249,8 +248,7 @@ public class GridController : MonoBehaviour {
     /// </summary>
     /// <param name="w"></param>
     /// <param name="h"></param>
-    private void BuildGrid(int w, int h) {
-
+    private void BuildGrid(int w, int h, bool changeStateToFalling = true) {
 
         // destroy existing GridCell objects:
         if(cells != null) {
@@ -272,18 +270,18 @@ public class GridController : MonoBehaviour {
                 // spawn UI game object:
                 GridCell cell = Instantiate(cellPrefab, parentUI.transform);
 
-                cell.SpawnRandom();
+                cell.SpawnRandom(false);
 
                 // store cell in grid:
                 cells[x, y] = cell;
 
                 // position it on the screen:
                 cell.PositionCell(new GridPosition(x, y), true);
-
-
+                
             }//end y loop
         }//end x loop
 
+        if(changeStateToFalling) ChangeStates(new States.Falling());
     }//BuildGrid
 
     /// <summary>
@@ -363,7 +361,6 @@ public class GridController : MonoBehaviour {
         }//end x loop
         return null;
     }
-
 
     public void TrySwap(GridCell cell, Direction dir)
     {
@@ -446,27 +443,23 @@ public class GridController : MonoBehaviour {
             
             int secondCount = 0;
             
-
             for (int y = 0; y < temp.GetLength(1); y++) // go up the column (from 0), one gem at a time
             {
                 GridCell cell = null;
 
                 if(cells[x,y].cellType == CellType.None) {
                     cell = cells[x, y];
-                }
-                else if (cellsUnpopped.Count > 0) {
+                } else if (cellsUnpopped.Count > 0) {
                     cell = cellsUnpopped[0];
                     cellsUnpopped.RemoveAt(0);
-                }
-                else {
+                } else {
                     cell = cellsPopped[0];
                     cellsPopped.RemoveAt(0);
                 }
                 if (cell.isMatched) // cell is matched:
                 {
-
                     secondCount++;
-                    cell.SpawnRandom();
+                    cell.SpawnRandom(true);
                     cell.PositionCell(new GridPosition(x, cells.GetLength(1) + secondCount), true);
                     cell.PositionCell(new GridPosition(x, y));
                 } else {
@@ -479,14 +472,12 @@ public class GridController : MonoBehaviour {
         cells = temp;
 
         foreach (KeyValuePair<CellType, int> matchType in matchesByType) {
-            ShipController.GemsMatched(matchType.Key, matchType.Value);
+            ShipController.OnGemsMatched(matchType.Key, matchType.Value);
         }
-
     }
 
     private GridPosition FindNeighborCell(GridPosition pos, Direction dir)
     {
-
         if (dir == Direction.Up) return new GridPosition(pos.x, pos.y + 1);
         if (dir == Direction.Down) return new GridPosition(pos.x, pos.y - 1);
 
@@ -527,12 +518,11 @@ public class GridController : MonoBehaviour {
             {
                 GridPosition pos = new GridPosition(x, y);
                 //check for matches up
-               if(CheckNeighborForMatch(pos, Direction.Up) >= 3) foundMatches = true;
+                if (CheckNeighborForMatch(pos, Direction.Up) >= 3) foundMatches = true;
                 //check for matches up and right
-               if (CheckNeighborForMatch(pos, Direction.RightUp) >= 3) foundMatches = true;
+                if (CheckNeighborForMatch(pos, Direction.RightUp) >= 3) foundMatches = true;
                 //check for matches down and right
-               if (CheckNeighborForMatch(pos, Direction.RightDown) >= 3) foundMatches = true;
-
+                if (CheckNeighborForMatch(pos, Direction.RightDown) >= 3) foundMatches = true;
             }
         }
         return foundMatches;
@@ -544,7 +534,6 @@ public class GridController : MonoBehaviour {
         CellType matchType = cell.cellType;
         
         if (matchType == CellType.None) return 0;
-
 
         List<GridCell> cellsInMatch = new List<GridCell>();
         cellsInMatch.Add(cell);

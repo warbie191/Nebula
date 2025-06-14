@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -46,8 +47,8 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         SetCellType(cellType);
     }
 
-    public void SpawnRandom() {
-        Spawn(RandCellType());
+    public void SpawnRandom(bool allowWild) {
+        Spawn(RandCellType(allowWild));
     }
     public void AnimSlideToTarget() {
         RectTransform rt = (RectTransform)transform;
@@ -65,14 +66,16 @@ public class GridCell : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         return false;
     }
     public void AnimChangeScale() {
-        if (isMatched)
-        {
+        if (isMatched) {
             RectTransform rt = (RectTransform)transform;
-            rt.localScale += (Vector3.zero - rt.localScale) * .05f;
+            rt.localScale = AnimMath.Slide(rt.localScale, Vector3.zero, .01f);
         }
     }
-    public static CellType RandCellType() {
-        return (CellType)Random.Range(1, System.Enum.GetNames(typeof(CellType)).Length);
+    public static CellType RandCellType(bool allowWilds = true) {
+        List<CellType> types = ((CellType[]) System.Enum.GetValues(typeof(CellType))).ToList();
+        types.Remove(CellType.None);
+        if(allowWilds == false) types.Remove(CellType.Wild);
+        return (CellType) types[Random.Range(0, types.Count)];
     }
     public void SetCellType(CellType cellType) {
         this.cellType = cellType;

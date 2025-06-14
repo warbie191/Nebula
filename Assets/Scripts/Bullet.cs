@@ -12,7 +12,7 @@ public class Bullet : MonoBehaviour
     void Start()
     {
         Rigidbody rb = GetComponent<Rigidbody>();
-        rb.velocity = Vector3.up * speed;
+        rb.linearVelocity = Vector3.up * speed;
     }
 
     void OnTriggerEnter(Collider hitinfo)
